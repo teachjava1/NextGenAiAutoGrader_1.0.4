@@ -1,5 +1,7 @@
-flask
+Flask
 openai
 python-docx
 PyPDF2
 openpyxl
+gunicorn
+stripe
