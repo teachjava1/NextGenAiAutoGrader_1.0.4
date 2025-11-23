@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>NextGenAiTeachers – AI Grader</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #222222;
+      --panel: #f4f4f4;
+      --border: #dddddd;
+      --button-bg: #0066ff;
+      --button-text: #ffffff;
+      --accent: #1a73e8;
+      --error: #c62828;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #121212;
+        --text: #e6e6e6;
+        --panel: #1e1e1e;
+        --border: #333333;
+        --button-bg: #1a73e8;
+        --button-text: #ffffff;
+        --accent: #4dabf7;
+        --error: #ef5350;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+    }
+    h1 { text-align: center; margin-bottom: 10px; }
+    h2 { margin-top: 24px; }
+    .subtitle { text-align: center; margin-bottom: 24px; color: #666; }
+    @media (prefers-color-scheme: dark) {
+      .subtitle { color: #aaa; }
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    label { display: block; margin-top: 12px; font-weight: 600; }
+    input, textarea {
+      width: 100%; padding: 8px; margin-top: 4px;
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text);
+    }
+    button {
+      margin-top: 14px; padding: 10px 16px;
+      border: none; border-radius: 6px;
+      background: var(--button-bg); color: var(--button-text);
+      font-size: 15px; cursor: pointer;
+    }
+    button[disabled] { opacity: 0.5; cursor: default; }
+    button:hover:not([disabled]) { opacity: 0.9; }
+    .row {
+      display: grid;
+      grid-template-columns: 1.1fr 1.1fr;
+      gap: 24px;
+      align-items: flex-start;
+    }
+    @media (max-width: 800px) {
+      .row { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-top: 10px;
+    }
+    .result-box {
+      margin-top: 10px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 15px;
+      border-radius: 6px;
+      white-space: pre-wrap;
+      font-family: "SF Mono", Consolas, monospace;
+      font-size: 14px;
+      line-height: 1.45;
+      min-height: 120px;
+    }
+    .status-bar {
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    .status-bar span { margin-right: 10px; }
+    .status-error { color: var(--error); font-weight: 600; }
+    .pill {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: var(--accent);
+      color: white;
+      margin-left: 6px;
+    }
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-left: 8px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    hr { margin: 24px 0; border: none; border-top: 1px solid var(--border); }
+    .small { font-size: 12px; opacity: 0.8; }
+  </style>
+</head>
+
+<body>
+<div class="container">
+  <h1>NextGenAiTeachers – AI Grader</h1>
+  <p class="subtitle">Upload a rubric and student work, review the AI feedback, and paste directly into Canvas or Google Classroom.</p>
+
+  <div class="card">
+    <h2>Account</h2>
+    <label>Email</label>
+    <input id="regEmail" type="email" placeholder="teacher@example.com" />
+
+    <label>Password</label>
+    <input id="regPassword" type="password" />
+
+    <button onclick="registerUser()">Register</button>
+
+    <hr>
+
+    <label>Login Email</label>
+    <input id="email" type="email" />
+
+    <label>Login Password</label>
+    <input id="password" type="password" />
+
+    <button onclick="login()">Login</button>
+    <button onclick="logout()">Logout</button>
+
+    <div class="status-bar" id="userStatus">Not logged in</div>
+  </div>
+
+  <div class="row">
+    <div class="card">
+      <h2>Rubric & Student Work</h2>
+
+      <label>Rubric Text (optional)</label>
+      <textarea id="rubricText" rows="4" placeholder="Paste rubric here (or upload a file)..."></textarea>
+
+      <label>Rubric File</label>
+      <input id="rubricFile" type="file" />
+
+      <label>Student Text (optional)</label>
+      <textarea id="studentText" rows="4" placeholder="Paste student submission here (or upload a file)..."></textarea>
+
+      <label>Student File</label>
+      <input id="studentFile" type="file" />
+
+      <button id="gradeBtn" onclick="grade()">Grade with AI</button>
+      <span id="spinner" style="display:none;" class="spinner"></span>
+      <div class="small">The full result will appear on the right and the Teacher Comment Summary will be auto-copied for quick pasting.</div>
+    </div>
+
+    <div class="card">
+      <h2>AI Feedback</h2>
+      <div id="planInfo" class="small"></div>
+      <div id="result" class="result-box">Results will appear here…</div>
+      <div id="errorBox" class="status-bar status-error"></div>
+      <div class="small" id="copyStatus"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+async function registerUser() {
+  const email = document.getElementById("regEmail").value.trim();
+  const password = document.getElementById("regPassword").value.trim();
+  const res = await fetch("/api/register", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({email, password})
+  });
+  const data = await res.json();
+  document.getElementById("result").textContent = JSON.stringify(data, null, 2);
+  checkUser();
+}
+
+async function login() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const res = await fetch("/api/login", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({email, password})
+  });
+  const data = await res.json();
+  document.getElementById("result").textContent = JSON.stringify(data, null, 2);
+  checkUser();
+}
+
+async function logout() {
+  await fetch("/api/logout", {method: "POST"});
+  document.getElementById("userStatus").textContent = "Not logged in";
+  document.getElementById("planInfo").textContent = "";
+}
+
+async function checkUser() {
+  const res = await fetch("/api/me");
+  const data = await res.json();
+  const status = document.getElementById("userStatus");
+  const planInfo = document.getElementById("planInfo");
+  if (data.loggedIn) {
+    status.textContent = "Logged in as: " + data.email + " (Plan: " + data.plan + ")";
+    if (data.plan === "free") {
+      planInfo.textContent = "Free plan: " + (data.uses_today || 0) + " / " + (data.limit || 5) + " grades used today. Upgrade to Pro for unlimited grading.";
+    } else {
+      planInfo.textContent = "Pro plan: unlimited grading.";
+    }
+  } else {
+    status.textContent = "Not logged in";
+    planInfo.textContent = "";
+  }
+}
+
+async function grade() {
+  const gradeBtn = document.getElementById("gradeBtn");
+  const spinner = document.getElementById("spinner");
+  const errorBox = document.getElementById("errorBox");
+  const copyStatus = document.getElementById("copyStatus");
+
+  errorBox.textContent = "";
+  copyStatus.textContent = "";
+  gradeBtn.disabled = true;
+  spinner.style.display = "inline-block";
+
+  const formData = new FormData();
+  formData.append("rubricText", document.getElementById("rubricText").value);
+  formData.append("studentText", document.getElementById("studentText").value);
+
+  const rubricFile = document.getElementById("rubricFile").files[0];
+  const studentFile = document.getElementById("studentFile").files[0];
+
+  if (rubricFile) formData.append("rubricFile", rubricFile);
+  if (studentFile) formData.append("studentFile", studentFile);
+
+  try {
+    const res = await fetch("/api/grade", { method: "POST", body: formData });
+    const data = await res.json();
+
+    if (!res.ok) {
+      errorBox.textContent = data.error || "An error occurred while grading.";
+      document.getElementById("result").textContent = JSON.stringify(data, null, 2);
+    } else {
+      const fullText = data.result || "";
+      document.getElementById("result").textContent = fullText;
+
+      // Try to auto-copy only the Teacher Comment Summary if present
+      let summaryText = "";
+      const marker = "Teacher Comment Summary:";
+      const idx = fullText.indexOf(marker);
+      if (idx !== -1) {
+        summaryText = fullText.substring(idx).trim();
+      } else {
+        summaryText = fullText.trim();
+      }
+
+      try {
+        await navigator.clipboard.writeText(summaryText);
+        copyStatus.textContent = "Teacher Comment Summary copied to clipboard.";
+      } catch (e) {
+        copyStatus.textContent = "Could not access clipboard. You can still copy manually.";
+        console.error("Clipboard error:", e);
+      }
+    }
+
+    // Update usage info if returned
+    if (data.plan) {
+      const planInfo = document.getElementById("planInfo");
+      if (data.plan === "free") {
+        planInfo.textContent = "Free plan: " + (data.uses_today || 0) + " / " + (data.limit || 5) + " grades used today. Upgrade to Pro for unlimited grading.";
+      } else {
+        planInfo.textContent = "Pro plan: unlimited grading.";
+      }
+    }
+
+  } catch (err) {
+    console.error(err);
+    errorBox.textContent = "Network or server error while grading.";
+  } finally {
+    gradeBtn.disabled = false;
+    spinner.style.display = "none";
+  }
+}
+
+checkUser();
+</script>
+
+</body>
+</html>

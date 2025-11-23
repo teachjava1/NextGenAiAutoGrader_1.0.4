@@ -1,0 +1,118 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>NextGen AI AutoGrader</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="page-shell">
+    <header class="navbar">
+      <div class="nav-brand">
+        <div class="logo-mark"></div>
+        <div>
+          <div class="nav-brand-text-main">NextGen AI AutoGrader</div>
+          <div class="nav-brand-text-sub">Fast, rubric-aligned AI grading for teachers</div>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <a href="/grader" class="btn btn-ghost">Log in</a>
+        <a href="/grader" class="btn btn-primary">Start grading</a>
+      </div>
+    </header>
+
+    <section class="hero-grid">
+      <div>
+        <div class="hero-pill-row">
+          <span class="hero-pill">Hybrid rubric engine • GPT‑4o + 4o‑mini</span>
+        </div>
+        <h1 class="hero-title">
+          Grade any rubric, <span class="hero-highlight">any file</span>, with AI that still keeps the teacher in charge.
+        </h1>
+        <p class="hero-subtitle">
+          Upload a rubric, drop in student work, and get clear scores plus a ready‑to‑paste Teacher Comment Summary
+          for Canvas or Google Classroom — in seconds, not hours.
+        </p>
+
+        <div class="hero-cta-row">
+          <a href="/grader" class="btn btn-primary">Open AI Grader</a>
+          <a href="#features" class="btn btn-ghost btn-sm">See how it works</a>
+        </div>
+        <div class="hero-metadata">
+          <strong>Teacher-first design.</strong> Human review required — AI suggestions, your judgment.
+        </div>
+      </div>
+
+      <aside class="hero-card" aria-label="Live grading preview">
+        <div class="hero-card-header">
+          <div class="hero-card-title">ATM Project Rubric · C++</div>
+          <span class="hero-chip">Hybrid AI grading</span>
+        </div>
+        <div class="hero-card-body">
+Criterion: Class design &amp; encapsulation
+Score: 7/8
+Evidence: Student uses a dedicated ATM class with private balance and clear public methods. Encapsulation is mostly correct, though some validation logic lives in main instead of the class.
+
+Criterion: Control flow &amp; loops
+Score: 5/6
+Evidence: The main transaction loop repeats correctly and handles multiple menu choices. One edge case for invalid input exits early instead of reprompting.
+
+Criterion: Style, clarity, and comments
+Score: 3/4
+Evidence: Variable names are readable and indentation is consistent. Comments describe the main methods but do not explain error handling or boundary cases.
+
+Total Score: 15/18
+
+Teacher Comment Summary:
+Strong implementation of the ATM behavior with solid loop structure and mostly well‑designed classes. To improve, move more validation inside the ATM class and add comments explaining how you handle invalid input and edge cases.
+        </div>
+        <div class="hero-card-footer">
+          <div class="hero-badge-row">
+            <span class="badge">Rubric‑aligned output</span>
+            <span class="badge">Teacher Comment Summary</span>
+          </div>
+          <div>v1.0.4 • Created by NextGen AI Teachers</div>
+        </div>
+      </aside>
+    </section>
+
+    <section id="features" class="features-grid" aria-label="Key features">
+      <article class="feature-card">
+        <h2 class="feature-title">Hybrid rubric engine</h2>
+        <p class="feature-body">
+          Combines semantic understanding with strict rubric checks. Every criterion gets a score, justification,
+          and clear evidence pulled from the student’s work.
+        </p>
+      </article>
+      <article class="feature-card">
+        <h2 class="feature-title">Any file, any rubric</h2>
+        <p class="feature-body">
+          Paste text or upload DOCX, PDF, code, and more. The app merges rubric text and files into one clean prompt
+          for consistent grading.
+        </p>
+      </article>
+      <article class="feature-card">
+        <h2 class="feature-title">Teacher Comment Summary</h2>
+        <p class="feature-body">
+          Every grade ends with a short, paste‑ready summary for Canvas or Google Classroom. Highlight strengths,
+          next steps, and targeted improvements.
+        </p>
+      </article>
+      <article class="feature-card">
+        <h2 class="feature-title">Teacher-first safeguards</h2>
+        <p class="feature-body">
+          AI suggestions are meant to be reviewed, not blindly accepted. Teachers stay in control of scores and can
+          override anything.
+        </p>
+      </article>
+    </section>
+
+    <footer class="footer">
+      <div>NextGen AI AutoGrader v1.0.4 · Created by NextGen AI Teachers</div>
+      <div>Built for teachers who want less clickwork and more time with students.</div>
+    </footer>
+  </main>
+</body>
+</html>

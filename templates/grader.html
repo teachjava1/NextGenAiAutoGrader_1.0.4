@@ -1,0 +1,269 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>NextGen AI AutoGrader · Grader</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="grader-shell">
+    <header class="navbar">
+      <div class="nav-brand">
+        <div class="logo-mark"></div>
+        <div>
+          <div class="nav-brand-text-main">NextGen AI AutoGrader</div>
+          <div class="nav-brand-text-sub">Secure login · Hybrid rubric engine</div>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <a href="/" class="btn btn-ghost">Home</a>
+      </div>
+    </header>
+
+    <section class="grader-grid">
+      <section class="card" aria-label="Account and plan">
+        <h2>Account</h2>
+
+        <label for="regEmail">Email</label>
+        <input id="regEmail" type="email" placeholder="teacher@example.com" />
+
+        <label for="regPassword">Password</label>
+        <input id="regPassword" type="password" />
+
+        <div class="row-inline">
+          <button class="btn btn-secondary btn-sm" onclick="registerUser()">Register</button>
+        </div>
+
+        <hr style="margin: 14px 0; border: none; border-top: 1px solid rgba(38,43,71,0.9)" />
+
+        <label for="email">Login Email</label>
+        <input id="email" type="email" />
+
+        <label for="password">Login Password</label>
+        <input id="password" type="password" />
+
+        <div class="row-inline">
+          <button class="btn btn-secondary btn-sm" onclick="login()">Login</button>
+          <button class="btn btn-ghost btn-sm" onclick="logout()">Logout</button>
+        </div>
+
+        <div class="status-bar" id="userStatus">Not logged in</div>
+        <div class="small" id="planInfo"></div>
+      </section>
+
+      <section class="card" aria-label="Rubric and student work">
+        <h2>Rubric &amp; Student Work</h2>
+
+        <label for="rubricText">Rubric Text (optional)</label>
+        <textarea id="rubricText" rows="4" placeholder="Paste rubric here (or upload a file)..."></textarea>
+
+        <label for="rubricFile">Rubric File</label>
+        <input id="rubricFile" class="file-input" type="file" />
+
+        <label for="studentText">Student Text (optional)</label>
+        <textarea id="studentText" rows="4" placeholder="Paste student submission here (or upload a file)..."></textarea>
+
+        <label for="studentFile">Student File</label>
+        <input id="studentFile" class="file-input" type="file" />
+
+        <div class="row-inline">
+          <button id="gradeBtn" class="btn btn-primary btn-sm" onclick="grade()">Grade with AI</button>
+          <span id="spinner" class="spinner" style="display:none;"></span>
+          <button id="copySummaryBtn" class="btn btn-secondary btn-sm" type="button" onclick="copySummaryOnly()">
+            Copy Summary Only
+          </button>
+        </div>
+        <div class="small">
+          The full result appears on the right. Use “Copy Summary Only” to grab just the Teacher Comment Summary for Canvas or Google Classroom.
+        </div>
+      </section>
+
+      <section class="card" style="grid-column: 1 / -1;" aria-label="AI feedback">
+        <h2>AI Feedback</h2>
+        <div id="result" class="result-box">Results will appear here…</div>
+        <div id="errorBox" class="status-bar status-error"></div>
+        <div id="copyStatus" class="small"></div>
+      </section>
+    </section>
+
+    <footer class="footer">
+      <div>NextGen AI AutoGrader v1.0.4 · Created by NextGen AI Teachers</div>
+      <div>AI suggestions require human review. Always read student work before finalizing grades.</div>
+    </footer>
+  </main>
+
+  <script>
+  async function registerUser() {
+    const email = document.getElementById("regEmail").value.trim();
+    const password = document.getElementById("regPassword").value.trim();
+    const status = document.getElementById("userStatus");
+
+    const res = await fetch("/api/register", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      status.textContent = "Registration error: " + data.error;
+    } else {
+      status.textContent = "Registration successful. You can now log in.";
+    }
+
+    checkUser();
+  }
+
+  async function login() {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const status = document.getElementById("userStatus");
+
+    const res = await fetch("/api/login", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      status.textContent = "Login error: " + data.error;
+    } else if (data.message) {
+      status.textContent = data.message;
+    }
+
+    checkUser();
+  }
+
+  async function logout() {
+    await fetch("/api/logout", { method: "POST" });
+    document.getElementById("userStatus").textContent = "Not logged in";
+    document.getElementById("planInfo").textContent = "";
+  }
+
+  async function checkUser() {
+    const res = await fetch("/api/me");
+    const data = await res.json();
+    const status = document.getElementById("userStatus");
+    const planInfo = document.getElementById("planInfo");
+
+    if (data.loggedIn) {
+      status.textContent = "Logged in as: " + data.email + " (Plan: " + data.plan + ")";
+      if (data.plan === "free") {
+        planInfo.textContent =
+          "Free plan: " + (data.uses_today || 0) + " / " + (data.limit || 5) +
+          " grades used today. Upgrade to Pro for unlimited grading.";
+      } else {
+        planInfo.textContent = "Pro plan: unlimited grading.";
+      }
+    } else {
+      status.textContent = "Not logged in";
+      planInfo.textContent = "";
+    }
+  }
+
+  async function grade() {
+    const gradeBtn = document.getElementById("gradeBtn");
+    const spinner = document.getElementById("spinner");
+    const errorBox = document.getElementById("errorBox");
+    const copyStatus = document.getElementById("copyStatus");
+
+    errorBox.textContent = "";
+    copyStatus.textContent = "";
+    gradeBtn.disabled = true;
+    spinner.style.display = "inline-block";
+
+    const formData = new FormData();
+    formData.append("rubricText", document.getElementById("rubricText").value);
+    formData.append("studentText", document.getElementById("studentText").value);
+
+    const rubricFile = document.getElementById("rubricFile").files[0];
+    const studentFile = document.getElementById("studentFile").files[0];
+
+    if (rubricFile) formData.append("rubricFile", rubricFile);
+    if (studentFile) formData.append("studentFile", studentFile);
+
+    try {
+      const res = await fetch("/api/grade", { method: "POST", body: formData });
+      const data = await res.json();
+
+      if (!res.ok) {
+        errorBox.textContent = data.error || "An error occurred while grading.";
+        document.getElementById("result").textContent = "";
+      } else {
+        const fullText = data.result || "";
+        document.getElementById("result").textContent = fullText;
+
+        // Auto-copy the Teacher Comment Summary, if present
+        const marker = "Teacher Comment Summary:";
+        let summaryText = "";
+        const idx = fullText.indexOf(marker);
+        if (idx !== -1) {
+          summaryText = fullText.substring(idx).trim();
+        } else {
+          summaryText = fullText.trim();
+        }
+
+        try {
+          await navigator.clipboard.writeText(summaryText);
+          copyStatus.textContent = "Teacher Comment Summary copied to clipboard.";
+        } catch (e) {
+          copyStatus.textContent = "Could not access clipboard. Use Copy Summary Only instead.";
+          console.error("Clipboard error:", e);
+        }
+      }
+
+      // Update usage info if returned
+      if (data.plan) {
+        const planInfo = document.getElementById("planInfo");
+        if (data.plan === "free") {
+          planInfo.textContent =
+            "Free plan: " + (data.uses_today || 0) + " / " + (data.limit || 5) +
+            " grades used today. Upgrade to Pro for unlimited grading.";
+        } else {
+          planInfo.textContent = "Pro plan: unlimited grading.";
+        }
+      }
+
+    } catch (err) {
+      console.error(err);
+      errorBox.textContent = "Network or server error while grading.";
+    } finally {
+      gradeBtn.disabled = false;
+      spinner.style.display = "none";
+    }
+  }
+
+  async function copySummaryOnly() {
+    const fullText = document.getElementById("result").textContent || "";
+    const copyStatus = document.getElementById("copyStatus");
+
+    if (!fullText.trim()) {
+      copyStatus.textContent = "Nothing to copy yet. Run a grade first.";
+      return;
+    }
+
+    const marker = "Teacher Comment Summary:";
+    let summaryText = "";
+    const idx = fullText.indexOf(marker);
+    if (idx !== -1) {
+      summaryText = fullText.substring(idx).trim();
+    } else {
+      summaryText = fullText.trim();
+    }
+
+    try {
+      await navigator.clipboard.writeText(summaryText);
+      copyStatus.textContent = "Teacher Comment Summary copied to clipboard.";
+    } catch (e) {
+      copyStatus.textContent = "Could not access clipboard. Please copy manually.";
+      console.error("Clipboard error:", e);
+    }
+  }
+
+  checkUser();
+  </script>
+</body>
+</html>
